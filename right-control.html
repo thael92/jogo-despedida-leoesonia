@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Controle Direito - Léo e Sônia</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            background-color: #FF6347;
+            font-family: 'Arial', sans-serif;
+            touch-action: none;
+        }
+        
+        .control-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            width: 100%;
+        }
+        
+        .control-button {
+            width: 80vw;
+            height: 80vw;
+            max-width: 300px;
+            max-height: 300px;
+            background-color: #CC3300;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        
+        .control-button:active {
+            transform: scale(0.95);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+            background-color: #992600;
+        }
+        
+        .arrow {
+            font-size: 100px;
+            color: white;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        
+        .status {
+            margin-top: 30px;
+            padding: 10px 20px;
+            background-color: rgba(0,0,0,0.2);
+            color: white;
+            border-radius: 20px;
+            font-size: 18px;
+        }
+        
+        .title {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="control-container">
+        <div class="title">Controle Direito</div>
+        <div id="rightButton" class="control-button">
+            <div class="arrow">➡️</div>
+        </div>
+        <div id="status" class="status">Desconectado</div>
+    </div>
+
+    <script>
+        // Elementos
+        const rightButton = document.getElementById('rightButton');
+        const statusElement = document.getElementById('status');
+        
+        // Obter ID do controle da URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const controlId = urlParams.get('id');
+        
+        // Variáveis de conexão
+        let socket;
+        let isConnected = false;
+        let isPressed = false;
+        
+        // Conectar ao WebSocket
+        function connectWebSocket() {
+            // Substitua pelo seu endereço de servidor WebSocket real
+            const serverUrl = 'ws://' + window.location.hostname + ':8080';
+            
+            try {
+                socket = new WebSocket(serverUrl);
+                
+                socket.onopen = function() {
+                    isConnected = true;
+                    statusElement.textContent = 'Conectado';
+                    
+                    // Enviar mensagem de registro
+                    socket.send(JSON.stringify({
+                        type: 'register',
+                        controlType: 'right',
+                        controlId: controlId
+                    }));
+                };
+                
+                socket.onclose = function() {
+                    isConnected = false;
+                    statusElement.textContent = 'Desconectado';
+                    
+                    // Tentar reconectar após 3 segundos
+                    setTimeout(connectWebSocket, 3000);
+                };
+                
+                socket.onerror = function() {
+                    isConnected = false;
+                    statusElement.textContent = 'Erro de conexão';
+                };
+            } catch (error) {
+                statusElement.textContent = 'Erro: ' + error.message;
+                
+                // Modo de simulação para testes
+                simulateConnection();
+            }
+        }
+        
+        // Simulação de conexão para testes locais
+        function simulateConnection() {
+            isConnected = true;
+            statusElement.textContent = 'Modo de simulação';
+        }
+        
+        // Enviar comando
+        function sendCommand(pressed) {
+            if (!isConnected) return;
+            
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: 'control',
+                    controlType: 'right',
+                    controlId: controlId,
+                    action: pressed ? 'press' : 'release'
+                }));
+            } else {
+                console.log('Simulação: Botão direito ' + (pressed ? 'pressionado' : 'solto'));
+            }
+        }
+        
+        // Eventos de toque
+        rightButton.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            if (!isPressed) {
+                isPressed = true;
+                sendCommand(true);
+                rightButton.style.backgroundColor = '#992600';
+            }
+        });
+        
+        rightButton.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            if (isPressed) {
+                isPressed = false;
+                sendCommand(false);
+                rightButton.style.backgroundColor = '#CC3300';
+            }
+        });
+        
+        // Eventos de mouse (para testes em desktop)
+        rightButton.addEventListener('mousedown', function(e) {
+            if (!isPressed) {
+                isPressed = true;
+                sendCommand(true);
+                rightButton.style.backgroundColor = '#992600';
+            }
+        });
+        
+        document.addEventListener('mouseup', function(e) {
+            if (isPressed) {
+                isPressed = false;
+                sendCommand(false);
+                rightButton.style.backgroundColor = '#CC3300';
+            }
+        });
+        
+        // Impedir comportamentos padrão que podem interferir
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
+        
+        // Iniciar conexão
+        window.addEventListener('load', connectWebSocket);
+    </script>
+</body>
+</html>
