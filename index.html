@@ -1100,157 +1100,205 @@
         createRoadLines();
     </script>
     <script>
-        // Elementos dos QR codes e controles
-const qrCodeScreen = document.getElementById('qr-code-screen');
-const leftQRImage = document.getElementById('left-qr');
-const rightQRImage = document.getElementById('right-qr');
-const leftControlIndicator = document.getElementById('left-control');
-const rightControlIndicator = document.getElementById('right-control');
+// Substitua o script de controle no final do arquivo por este:
+    // Elementos dos QR codes e controles
+    const qrCodeScreen = document.getElementById('qr-code-screen');
+    const leftQRImage = document.getElementById('left-qr');
+    const rightQRImage = document.getElementById('right-qr');
+    const leftControlIndicator = document.getElementById('left-control');
+    const rightControlIndicator = document.getElementById('right-control');
 
-// Botão para pular QR
-document.getElementById('skip-qr-button').addEventListener('click', skipQRAndPlaySolo);
+    // Botão para pular QR
+    document.getElementById('skip-qr-button').addEventListener('click', skipQRAndPlaySolo);
 
-// Esconder a tela inicial e mostrar a tela de QR code
-startScreen.style.display = 'none';
+    // Esconder a tela inicial e mostrar a tela de QR code
+    startScreen.style.display = 'none';
 
-// Variáveis de controle
-let leftControlConnected = false;
-let rightControlConnected = false;
-let controlMode = 'waiting'; // 'waiting', 'shared', 'solo'
+    // Variáveis de controle
+    let leftControlConnected = false;
+    let rightControlConnected = false;
+    let controlMode = 'waiting'; // 'waiting', 'shared', 'solo'
+    let leftControlActive = false;
+    let rightControlActive = false;
+    let socket;
 
-// Gerar QR codes
-// Gerar QR codes
-function generateQRCodes() {
-    // Gerar IDs únicos para os controles
-    const leftControlId = 'left-' + Date.now();
-    const rightControlId = 'right-' + Date.now();
-    
-    // URLs para os controles
-    const baseUrl = window.location.href.split('?')[0].split('/').slice(0, -1).join('/');
-    const leftControlUrl = baseUrl + '/left-control.html?id=' + leftControlId;
-    const rightControlUrl = baseUrl + '/right-control.html?id=' + rightControlId;
-    
+    // Conectar ao servidor WebSocket
+    function connectWebSocket() {
+        socket = io();
+        
+        // Quando conectado ao servidor
+        socket.on('connect', () => {
+            console.log('Conectado ao servidor WebSocket');
+        });
+        
+        // Quando um controle se conecta
+        socket.on('control-connected', (data) => {
+            if (data.type === 'left') {
+                leftControlConnected = true;
+                leftControlIndicator.textContent = "⬅️ Conectado";
+                leftControlIndicator.classList.add('active');
+            } else if (data.type === 'right') {
+                rightControlConnected = true;
+                rightControlIndicator.textContent = "➡️ Conectado";
+                rightControlIndicator.classList.add('active');
+            }
+            
+            checkBothConnected();
+        });
+        
+        // Quando um controle se desconecta
+        socket.on('control-disconnected', (data) => {
+            if (data.type === 'left') {
+                leftControlConnected = false;
+                leftControlIndicator.textContent = "⬅️ Desconectado";
+                leftControlIndicator.classList.remove('active');
+                leftControlActive = false;
+            } else if (data.type === 'right') {
+                rightControlConnected = false;
+                rightControlIndicator.textContent = "➡️ Desconectado";
+                rightControlIndicator.classList.remove('active');
+                rightControlActive = false;
+            }
+        });
+        
+                // Quando recebe um comando de controle
+                socket.on('game-control', (data) => {
+            if (data.action === 'left') {
+                leftControlActive = data.active;
+            } else if (data.action === 'right') {
+                rightControlActive = data.active;
+            }
+        });
+        
+        // Quando o servidor desconecta
+        socket.on('disconnect', () => {
+            console.log('Desconectado do servidor WebSocket');
+            leftControlConnected = false;
+            rightControlConnected = false;
+            leftControlIndicator.textContent = "⬅️ Desconectado";
+            leftControlIndicator.classList.remove('active');
+            rightControlIndicator.textContent = "➡️ Desconectado";
+            rightControlIndicator.classList.remove('active');
+        });
+    }
+
     // Gerar QR codes
-    const qr1 = qrcode(0, 'L');
-    qr1.addData(leftControlUrl);
-    qr1.make();
-    leftQRImage.src = qr1.createDataURL(10);
-    
-    const qr2 = qrcode(0, 'L');
-    qr2.addData(rightControlUrl);
-    qr2.make();
-    rightQRImage.src = qr2.createDataURL(10);
-    
-    // Configurar WebSocket para receber os controles
-
-    
-    // Configurar WebSocket ou verificação de parâmetros de URL
-    checkForControlConnections(leftControlId, rightControlId);
-}
-
-// Verificar conexões de controle (simulado)
-function checkForControlConnections(leftId, rightId) {
-    // Simulação de conexão - em um caso real, usaria WebSockets
-    
-    // Simular conexão do controle esquerdo após 3 segundos
-    setTimeout(() => {
-        leftControlConnected = true;
-        leftControlIndicator.textContent = "⬅️ Conectado";
-        leftControlIndicator.classList.add('active');
-        checkBothConnected();
-    }, 3000);
-    
-    // Simular conexão do controle direito após 5 segundos
-    setTimeout(() => {
-        rightControlConnected = true;
-        rightControlIndicator.textContent = "➡️ Conectado";
-        rightControlIndicator.classList.add('active');
-        checkBothConnected();
-    }, 5000);
-}
-
-// Verificar se ambos os controles estão conectados
-function checkBothConnected() {
-    if (leftControlConnected && rightControlConnected && controlMode === 'waiting') {
-        controlMode = 'shared';
-        // Iniciar o jogo automaticamente após um breve atraso
-        setTimeout(() => {
-            qrCodeScreen.style.display = 'none';
-            startScreen.style.display = 'flex';
-        }, 1500);
+    function generateQRCodes() {
+        // Gerar IDs únicos para os controles
+        const leftControlId = 'left-' + Date.now();
+        const rightControlId = 'right-' + Date.now() + 1;
+        
+        // URLs para os controles
+        const baseUrl = window.location.origin;
+        const leftControlUrl = baseUrl + '/left-control.html?id=' + leftControlId;
+        const rightControlUrl = baseUrl + '/right-control.html?id=' + rightControlId;
+        
+        // Gerar QR codes usando a biblioteca qrcode.js
+        // Você precisa incluir a biblioteca qrcode.js no seu HTML
+        
+        // Limpar elementos anteriores
+        document.getElementById('left-qr').innerHTML = '';
+        document.getElementById('right-qr').innerHTML = '';
+        
+        // Criar novos QR codes
+        new QRCode(document.getElementById('left-qr'), {
+            text: leftControlUrl,
+            width: 200,
+            height: 200,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+        
+        new QRCode(document.getElementById('right-qr'), {
+            text: rightControlUrl,
+            width: 200,
+            height: 200,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+        
+        // Conectar ao WebSocket para receber os controles
+        connectWebSocket();
     }
-}
 
-// Pular QR e jogar sozinho
-function skipQRAndPlaySolo() {
-    controlMode = 'solo';
-    qrCodeScreen.style.display = 'none';
-    startScreen.style.display = 'flex';
-}
-
-// Modificar a função de controle do carro para suportar controles compartilhados
-function moveCar() {
-    const moveSpeed = 5;
-    
-    if (controlMode === 'solo') {
-        // Modo solo - um jogador controla ambas as direções
-        if (keysPressed['ArrowLeft']) {
-            carPosition -= moveSpeed;
-        }
-        
-        if (keysPressed['ArrowRight']) {
-            carPosition += moveSpeed;
-        }
-    } else if (controlMode === 'shared') {
-        // Modo compartilhado - cada jogador controla uma direção
-        // Em um caso real, estas variáveis seriam atualizadas via WebSocket
-        if (leftControlActive) {
-            carPosition -= moveSpeed;
-        }
-        
-        if (rightControlActive) {
-            carPosition += moveSpeed;
+    // Verificar se ambos os controles estão conectados
+    function checkBothConnected() {
+        if (leftControlConnected && rightControlConnected && controlMode === 'waiting') {
+            controlMode = 'shared';
+            // Iniciar o jogo automaticamente após um breve atraso
+            setTimeout(() => {
+                qrCodeScreen.style.display = 'none';
+                startScreen.style.display = 'flex';
+            }, 1500);
         }
     }
-    
-    car.style.left = carPosition + 'px';
-}
 
-// Variáveis para simular os controles compartilhados
-let leftControlActive = false;
-let rightControlActive = false;
+    // Pular QR e jogar sozinho
+    function skipQRAndPlaySolo() {
+        controlMode = 'solo';
+        qrCodeScreen.style.display = 'none';
+        startScreen.style.display = 'flex';
+    }
 
-// Em um caso real, estas funções seriam chamadas via WebSocket
-function simulateLeftControl() {
-    leftControlActive = !leftControlActive;
-}
+    // Modificar a função de controle do carro para suportar controles compartilhados
+    function moveCar() {
+        const moveSpeed = 5;
+        
+        if (controlMode === 'solo') {
+            // Modo solo - um jogador controla ambas as direções
+            if (keysPressed['ArrowLeft']) {
+                carPosition -= moveSpeed;
+            }
+            
+            if (keysPressed['ArrowRight']) {
+                carPosition += moveSpeed;
+            }
+        } else if (controlMode === 'shared') {
+            // Modo compartilhado - cada jogador controla uma direção
+            if (leftControlActive) {
+                carPosition -= moveSpeed;
+            }
+            
+            if (rightControlActive) {
+                carPosition += moveSpeed;
+            }
+        }
+        
+        car.style.left = carPosition + 'px';
+    }
 
-function simulateRightControl() {
-    rightControlActive = !rightControlActive;
-}
+    // Adicionar controles de teclado para simular os controles compartilhados (para testes)
+    window.addEventListener('keydown', function(e) {
+        keysPressed[e.key] = true;
+        
+        // Teclas A e D para simular os controles compartilhados em modo de teste
+        if (e.key === 'a' && controlMode === 'solo') leftControlActive = true;
+        if (e.key === 'd' && controlMode === 'solo') rightControlActive = true;
+    });
 
-// Adicionar controles de teclado para simular os controles compartilhados
-window.addEventListener('keydown', function(e) {
-    keysPressed[e.key] = true;
-    
-    // Teclas A e D para simular os controles compartilhados
-    if (e.key === 'a') simulateLeftControl();
-    if (e.key === 'd') simulateRightControl();
-});
+    window.addEventListener('keyup', function(e) {
+        keysPressed[e.key] = false;
+        
+        // Desativar controles ao soltar as teclas A e D
+        if (e.key === 'a') leftControlActive = false;
+        if (e.key === 'd') rightControlActive = false;
+    });
 
-window.addEventListener('keyup', function(e) {
-    keysPressed[e.key] = false;
-    
-    // Desativar controles ao soltar as teclas A e D
-    if (e.key === 'a') leftControlActive = false;
-    if (e.key === 'd') rightControlActive = false;
-});
-
-// Iniciar geração de QR codes quando a página carregar
-window.addEventListener('load', generateQRCodes);
-
-        </script>
+    // Iniciar geração de QR codes quando a página carregar
+    window.addEventListener('load', function() {
+        // Carregar a biblioteca QRCode.js dinamicamente
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js';
+        script.onload = generateQRCodes;
+        document.head.appendChild(script);
+        
+        // Carregar Socket.IO
+        const socketScript = document.createElement('script');
+        socketScript.src = '/socket.io/socket.io.js';
+        document.head.appendChild(socketScript);
+    });
+</script>
 </body>
 </html>
-
-
