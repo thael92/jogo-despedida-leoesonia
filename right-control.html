@@ -2,131 +2,96 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle Direito - Despedida de Léo e Sônia</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Controle Direito</title>
     <style>
         body {
             margin: 0;
-            padding: 0;
-            height: 100vh;
+            overflow: hidden;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
-            background: linear-gradient(to bottom, #87CEEB, #1E90FF);
+            align-items: center;
+            min-height: 100vh;
+            background-color: #e74c3c; /* Vermelho */
             font-family: 'Arial', sans-serif;
             color: white;
+            flex-direction: column;
             text-align: center;
         }
-        
-        h1 {
-            margin-bottom: 20px;
-        }
-        
-        .control-button {
+        button {
             width: 80%;
-            height: 200px;
-            background-color: #4CAF50;
-            border: none;
+            max-width: 300px;
+            padding: 50px 20px;
+            font-size: 3em;
+            background-color: #c0392b; /* Vermelho mais escuro */
             color: white;
-            font-size: 36px;
-            border-radius: 15px;
-            box-shadow: 0 8px #388E3C;
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 10px #a93222;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
+            outline: none;
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: rgba(0,0,0,0); /* Remove highlight on tap for mobile */
         }
-        
-        .control-button:active {
-            background-color: #45a049;
-            box-shadow: 0 4px #388E3C;
-            transform: translateY(4px);
+        button:active {
+            transform: translateY(5px);
+            box-shadow: 0 5px #a93222;
         }
-        
-        .status {
+        p {
             margin-top: 20px;
-            padding: 10px;
-            background-color: rgba(0,0,0,0.7);
-            border-radius: 10px;
+            font-size: 1.2em;
         }
     </style>
 </head>
 <body>
     <h1>Controle Direito</h1>
-    <p>Pressione e segure o botão para mover o carro para a direita</p>
-    
-    <div class="control-button" id="rightButton">➡️</div>
-    
-    <div class="status" id="connectionStatus">Conectando...</div>
-    
-    <script src="/socket.io/socket.io.js"></script>
+    <button id="rightButton">→</button>
+    <p id="status">Conectando...</p>
+
+    <script src="/socket.io/socket.js"></script>
     <script>
-        // Obter ID do controle da URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const controlId = urlParams.get('id');
-        
-        if (!controlId) {
-            document.getElementById('connectionStatus').textContent = 'Erro: ID de controle não encontrado';
-        } else {
-            // Conectar ao servidor WebSocket
-            const socket = io();
-            
-            // Registrar este controle
-            socket.on('connect', () => {
-                socket.emit('register-control', { controlId, type: 'right' });
-                document.getElementById('connectionStatus').textContent = 'Conectado! Pronto para jogar';
-            });
-            
-            // Gerenciar eventos de botão
-            const rightButton = document.getElementById('rightButton');
-            
-            // Função para enviar comando
-            function sendCommand(active) {
-                socket.emit('control-input', { 
-                    controlId, 
-                    action: 'right', 
-                    active 
-                });
-            }
-            
-            // Eventos de toque para dispositivos móveis
-            rightButton.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                rightButton.style.backgroundColor = '#45a049';
-                rightButton.style.transform = 'translateY(4px)';
-                rightButton.style.boxShadow = '0 4px #388E3C';
-                sendCommand(true);
-            });
-            
-            rightButton.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                rightButton.style.backgroundColor = '#4CAF50';
-                rightButton.style.transform = '';
-                rightButton.style.boxShadow = '0 8px #388E3C';
-                sendCommand(false);
-            });
-            
-            // Eventos de mouse para desktop
-            rightButton.addEventListener('mousedown', () => {
-                sendCommand(true);
-            });
-            
-            rightButton.addEventListener('mouseup', () => {
-                sendCommand(false);
-            });
-            
-            rightButton.addEventListener('mouseleave', () => {
-                sendCommand(false);
-            });
-            
-            // Gerenciar desconexão
-            socket.on('disconnect', () => {
-                document.getElementById('connectionStatus').textContent = 'Desconectado. Tentando reconectar...';
-            });
-        }
+        const socket = io();
+        const rightButton = document.getElementById('rightButton');
+        const statusText = document.getElementById('status');
+        let controlType = 'right';
+
+        socket.on('connect', () => {
+            statusText.textContent = `Conectado como ${controlType}.`;
+            // Envia o tipo de controle para o servidor assim que conectado
+            socket.emit('register-control', { type: controlType });
+        });
+
+        socket.on('disconnect', () => {
+            statusText.textContent = 'Desconectado.';
+        });
+
+        socket.on('error', (message) => {
+            statusText.textContent = `Erro: ${message}`;
+        });
+
+        // Eventos para pressionar e soltar o botão
+        const sendControlPress = (active) => {
+            socket.emit('control-press', { action: 'right', active: active });
+        };
+
+        // Para navegadores desktop (mouse)
+        rightButton.addEventListener('mousedown', () => sendControlPress(true));
+        rightButton.addEventListener('mouseup', () => sendControlPress(false));
+        rightButton.addEventListener('mouseleave', () => sendControlPress(false));
+
+        // Para dispositivos móveis (toque)
+        rightButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            sendControlPress(true);
+        });
+        rightButton.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            sendControlPress(false);
+        });
+        rightButton.addEventListener('touchcancel', (e) => {
+            e.preventDefault();
+            sendControlPress(false);
+        });
     </script>
 </body>
 </html>

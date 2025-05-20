@@ -2,131 +2,96 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle Esquerdo - Despedida de Léo e Sônia</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Controle Esquerdo</title>
     <style>
         body {
             margin: 0;
-            padding: 0;
-            height: 100vh;
+            overflow: hidden;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
-            background: linear-gradient(to bottom, #87CEEB, #1E90FF);
+            align-items: center;
+            min-height: 100vh;
+            background-color: #3498db; /* Azul */
             font-family: 'Arial', sans-serif;
             color: white;
+            flex-direction: column;
             text-align: center;
         }
-        
-        h1 {
-            margin-bottom: 20px;
-        }
-        
-        .control-button {
+        button {
             width: 80%;
-            height: 200px;
-            background-color: #4CAF50;
-            border: none;
+            max-width: 300px;
+            padding: 50px 20px;
+            font-size: 3em;
+            background-color: #2980b9; /* Azul mais escuro */
             color: white;
-            font-size: 36px;
-            border-radius: 15px;
-            box-shadow: 0 8px #388E3C;
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 10px #21618c;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
+            outline: none;
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: rgba(0,0,0,0); /* Remove highlight on tap for mobile */
         }
-        
-        .control-button:active {
-            background-color: #45a049;
-            box-shadow: 0 4px #388E3C;
-            transform: translateY(4px);
+        button:active {
+            transform: translateY(5px);
+            box-shadow: 0 5px #21618c;
         }
-        
-        .status {
+        p {
             margin-top: 20px;
-            padding: 10px;
-            background-color: rgba(0,0,0,0.7);
-            border-radius: 10px;
+            font-size: 1.2em;
         }
     </style>
 </head>
 <body>
     <h1>Controle Esquerdo</h1>
-    <p>Pressione e segure o botão para mover o carro para a esquerda</p>
-    
-    <div class="control-button" id="leftButton">⬅️</div>
-    
-    <div class="status" id="connectionStatus">Conectando...</div>
-    
+    <button id="leftButton">←</button>
+    <p id="status">Conectando...</p>
+
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // Obter ID do controle da URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const controlId = urlParams.get('id');
-        
-        if (!controlId) {
-            document.getElementById('connectionStatus').textContent = 'Erro: ID de controle não encontrado';
-        } else {
-            // Conectar ao servidor WebSocket
-            const socket = io();
-            
-            // Registrar este controle
-            socket.on('connect', () => {
-                socket.emit('register-control', { controlId, type: 'left' });
-                document.getElementById('connectionStatus').textContent = 'Conectado! Pronto para jogar';
-            });
-            
-            // Gerenciar eventos de botão
-            const leftButton = document.getElementById('leftButton');
-            
-            // Função para enviar comando
-            function sendCommand(active) {
-                socket.emit('control-input', { 
-                    controlId, 
-                    action: 'left', 
-                    active 
-                });
-            }
-            
-            // Eventos de toque para dispositivos móveis
-            leftButton.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                leftButton.style.backgroundColor = '#45a049';
-                leftButton.style.transform = 'translateY(4px)';
-                leftButton.style.boxShadow = '0 4px #388E3C';
-                sendCommand(true);
-            });
-            
-            leftButton.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                leftButton.style.backgroundColor = '#4CAF50';
-                leftButton.style.transform = '';
-                leftButton.style.boxShadow = '0 8px #388E3C';
-                sendCommand(false);
-            });
-            
-            // Eventos de mouse para desktop
-            leftButton.addEventListener('mousedown', () => {
-                sendCommand(true);
-            });
-            
-            leftButton.addEventListener('mouseup', () => {
-                sendCommand(false);
-            });
-            
-            leftButton.addEventListener('mouseleave', () => {
-                sendCommand(false);
-            });
-            
-            // Gerenciar desconexão
-            socket.on('disconnect', () => {
-                document.getElementById('connectionStatus').textContent = 'Desconectado. Tentando reconectar...';
-            });
-        }
+        const socket = io();
+        const leftButton = document.getElementById('leftButton');
+        const statusText = document.getElementById('status');
+        let controlType = 'left';
+
+        socket.on('connect', () => {
+            statusText.textContent = `Conectado como ${controlType}.`;
+            // Envia o tipo de controle para o servidor assim que conectado
+            socket.emit('register-control', { type: controlType });
+        });
+
+        socket.on('disconnect', () => {
+            statusText.textContent = 'Desconectado.';
+        });
+
+        socket.on('error', (message) => {
+            statusText.textContent = `Erro: ${message}`;
+        });
+
+        // Eventos para pressionar e soltar o botão
+        const sendControlPress = (active) => {
+            socket.emit('control-press', { action: 'left', active: active });
+        };
+
+        // Para navegadores desktop (mouse)
+        leftButton.addEventListener('mousedown', () => sendControlPress(true));
+        leftButton.addEventListener('mouseup', () => sendControlPress(false));
+        leftButton.addEventListener('mouseleave', () => sendControlPress(false)); // Se o mouse sair do botão
+
+        // Para dispositivos móveis (toque)
+        leftButton.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Previne o zoom da página
+            sendControlPress(true);
+        });
+        leftButton.addEventListener('touchend', (e) => {
+            e.preventDefault(); // Previne o zoom da página
+            sendControlPress(false);
+        });
+        leftButton.addEventListener('touchcancel', (e) => {
+            e.preventDefault(); // Previne o zoom da página
+            sendControlPress(false);
+        });
     </script>
 </body>
 </html>
