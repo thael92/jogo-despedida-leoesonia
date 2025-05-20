@@ -31,24 +31,25 @@ let rightControlSocketId = null;
 io.on('connection', (socket) => { // Corrigido de 'conexão' e 'soquete' para 'connection' e 'socket'
     console.log('Um usuário conectado:', socket.id);
 
-    // Lidar com a conexão de um controle (identificado pelo 'type' enviado pelo cliente)
-    socket.on('register-control', (data) => { // Corrigido de 'soquete.on' e 'registro-controle' e 'dados' para 'socket.on', 'register-control' e 'data'
+    // server.js (trecho corrigido)
+// ... dentro de io.on('connection', (socket) => { ...
+    socket.on('register-control', (data) => {
         if (data.type === 'left' && !leftControlSocketId) {
             leftControlSocketId = socket.id;
-            socket.controlType = 'left'; // Armazena o tipo no socket para referência futura
+            socket.controlType = 'left';
             console.log('Controle ESQUERDO conectado:', socket.id);
-            io.emit('control-connected', { type: 'left' }); // Corrigido de 'conectado ao controle' e 'esquerda'
+            io.emit('control-connected', { type: 'left' }); // Corrigido para 'left'
         } else if (data.type === 'right' && !rightControlSocketId) {
             rightControlSocketId = socket.id;
-            socket.controlType = 'right'; // Armazena o tipo no socket para referência futura
+            socket.controlType = 'right';
             console.log('Controle DIREITO conectado:', socket.id);
-            io.emit('control-connected', { type: 'right' }); // Corrigido de 'conectado ao controle' e 'certo'
-        } else { // Corrigido de 'mais'
-            // Se já houver um controle desse tipo conectado, pode-se enviar uma mensagem de erro
+            io.emit('control-connected', { type: 'right' }); // Corrigido para 'right'
+        } else {
             console.log(`Tentativa de conectar um segundo controle ${data.type} ou tipo inválido.`);
             socket.emit('error', 'Este tipo de controle já está conectado ou tipo inválido.');
         }
     });
+// ...
 
     // Lidar com o evento de pressionar/soltar botão do controle
     socket.on('control-press', (data) => {
