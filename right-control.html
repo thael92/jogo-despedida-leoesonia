@@ -48,9 +48,14 @@
     <button id="rightButton">→</button>
     <p id="status">Conectando...</p>
 
-    <script src="/socket.io/socket.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <script>
-        const socket = io();
+        // IMPORTANTE: Se você estiver hospedando seu servidor Node.js em um domínio diferente (ex: Render),
+        // esta deve ser a URL COMPLETA do seu serviço Render.
+        // Ex: const socket = io('https://nome-do-seu-servico.onrender.com');
+        // Se este arquivo for servido pelo mesmo servidor Node.js, 'io()' é suficiente.
+        const socket = io(); // Conecta ao mesmo host e porta que serviu esta página
+
         const rightButton = document.getElementById('rightButton');
         const statusText = document.getElementById('status');
         let controlType = 'right';

@@ -17,7 +17,6 @@
             justify-content: space-around;
             width: 100%;
             margin: 20px 0;
-
         }
 
         .qr-code-box {
@@ -340,7 +339,7 @@
             <h1>Fase Concluída!</h1>
             <div class="video-container">
                 <video id="level-video" width="100%" height="100%" controls preload="auto">
-                    <source src="videos/fase1.mp4" type="video/mp4">
+                    <source src="" type="video/mp4">
                     Seu navegador não suporta o elemento de vídeo.
                 </video>
             </div>
@@ -350,8 +349,14 @@
 
         <div id="cat-event">
             <h1>Olha quem está aqui!</h1>
-            <p>Mia quer se juntar à viagem!</p>            
-            <button id="continue-with-cat-button">Continuar Viagem</button>
+            <p>Mia quer se juntar à viagem!</p>
+            <div class="video-container">
+                <video id="cat-video" width="100%" height="100%" controls preload="auto">
+                    <source src="" type="video/mp4">
+                    Seu navegador não suporta o elemento de vídeo.
+                </video>
+            </div>
+            <button id="continue-with-cat-button" style="display:none;">Continuar Viagem</button>
         </div>
 
         <div id="game-complete">
@@ -359,7 +364,7 @@
             <p>Você completou todas as fases da viagem de despedida!</p>
             <div class="video-container">
                 <video id="final-video" width="100%" height="100%" controls preload="auto">
-                    <source src="videos/fase3.mp4" type="video/mp4">
+                    <source src="" type="video/mp4">
                     Seu navegador não suporta o elemento de vídeo.
                 </video>
             </div>
@@ -389,7 +394,8 @@
 
         // Elementos de vídeo
         const levelVideo = document.getElementById('level-video');
-    
+        const catVideo = document.getElementById('cat-video');
+        const finalVideo = document.getElementById('final-video');
 
         // Botões
         const nextLevelButton = document.getElementById('next-level-button');
@@ -487,9 +493,11 @@
 
         // URLs dos vídeos (substitua com seus caminhos de vídeo reais)
         const videoUrls = {
-            level1: 'videos/fase1.mp4', // Exemplo: videos/level1.mp4
-            level2: 'videos/fase2.mp4',
-            level3: 'videos/fase3.mp4',
+            level1: 'videos/level1.mp4', // Exemplo: videos/level1.mp4
+            level2: 'videos/level2.mp4',
+            level3: 'videos/level3.mp4',
+            cat: 'videos/cat_join.mp4', // Exemplo: videos/cat_join.mp4
+            final: 'videos/final_message.mp4' // Exemplo: videos/final_message.mp4
         };
 
         // Textos de alegria para os balões
@@ -634,10 +642,14 @@
                 catEventScreen.style.display = 'flex';
 
                 // Configurar e reproduzir vídeo da gata
-               
-                continueWithCatButton.style.display = 'block'; // Esconder botão
+                catVideo.src = videoUrls.cat;
+                catVideo.load();
+                catVideo.play();
+                continueWithCatButton.style.display = 'none'; // Esconder botão
 
-                
+                catVideo.onended = () => {
+                    continueWithCatButton.style.display = 'block'; // Mostrar botão após o vídeo
+                };
 
             }, 3000);
         }
@@ -646,7 +658,8 @@
         function continueWithCat() {
             catEventScreen.style.display = 'none';
             // Pausar e redefinir o vídeo da gata
-           
+            catVideo.pause();
+            catVideo.currentTime = 0;
             continueWithCatButton.style.display = 'none'; // Esconder novamente
 
             catJoined = true;
@@ -1047,7 +1060,10 @@
             // Pausar e redefinir vídeos
             levelVideo.pause();
             levelVideo.currentTime = 0;
-           
+            catVideo.pause();
+            catVideo.currentTime = 0;
+            finalVideo.pause();
+            finalVideo.currentTime = 0;
 
             // Esconder botões novamente
             nextLevelButton.style.display = 'none';
@@ -1069,9 +1085,6 @@
             sounds.background.pause();
             playSound(sounds.levelComplete);
 
-            // completedLevelSpan is not defined in this scope, removing
-            // completedLevelSpan.textContent = level;
-
             if (level < 3) {
                 levelCompleteScreen.style.display = 'flex';
                 createConfetti();
@@ -1091,8 +1104,11 @@
                 playSound(sounds.gameComplete);
                 createConfetti();
 
-                
-                playAgainButton.style.display = 'block'; // Esconder botão
+                // Configurar e reproduzir vídeo final
+                finalVideo.src = videoUrls.final;
+                finalVideo.load();
+                finalVideo.play();
+                playAgainButton.style.display = 'none'; // Esconder botão
 
                 finalVideo.onended = () => {
                     playAgainButton.style.display = 'block'; // Mostrar botão após o vídeo
@@ -1144,7 +1160,6 @@
 
         // Elementos dos QR codes e controles
         const qrCodeScreen = document.getElementById('qr-code-screen');
-        // Alterado para divs que qrcode.js vai preencher
         const leftQRDiv = document.getElementById('left-qr');
         const rightQRDiv = document.getElementById('right-qr');
         const leftControlIndicator = document.getElementById('left-control-indicator');
@@ -1163,10 +1178,15 @@
         let controlMode = 'waiting'; // 'waiting', 'shared', 'solo'
         let leftControlActive = false;
         let rightControlActive = false;
-        let socket;
+        let socket; // Declarada aqui, inicializada em connectWebSocket
 
         // Conectar ao servidor WebSocket
         function connectWebSocket() {
+            // IMPORTANTE: Se você estiver hospedando seu servidor Node.js em um domínio diferente,
+            // (ex: Render), você precisará especificar a URL completa aqui:
+            // const SOCKET_SERVER_URL = 'https://sua-url-do-render.onrender.com';
+            // socket = io(SOCKET_SERVER_URL);
+            // Caso contrário, se o index.html for servido pelo mesmo servidor Node.js, isso é suficiente:
             socket = io();
 
             // Quando conectado ao servidor
@@ -1185,7 +1205,7 @@
                     rightControlIndicator.textContent = "➡️ Conectado";
                     rightControlIndicator.classList.add('active');
                 }
-
+                console.log(`Controle ${data.type} status: ${data.type === 'left' ? leftControlConnected : rightControlConnected}`);
                 checkBothConnected();
             });
 
@@ -1202,6 +1222,7 @@
                     rightControlIndicator.classList.remove('active');
                     rightControlActive = false; // Garante que o controle é desativado
                 }
+                console.log(`Controle ${data.type} status: ${data.type === 'left' ? leftControlConnected : rightControlConnected}`);
             });
 
             // Quando recebe um comando de controle
@@ -1228,7 +1249,10 @@
         // Gerar QR codes
         function generateQRCodes() {
             // A URL base para os controles será o endereço do seu servidor
-            const baseUrl = window.location.origin; // Ex: http://localhost:3000
+            // IMPORTANTE: Se você estiver usando o Render, esta deve ser a URL do seu serviço Render.
+            // Ex: const baseUrl = 'https://nome-do-seu-servico.onrender.com';
+            // Se estiver rodando localmente, window.location.origin funciona.
+            const baseUrl = window.location.origin;
 
             const leftControlUrl = `${baseUrl}/left-control.html`;
             const rightControlUrl = `${baseUrl}/right-control.html`;
@@ -1255,19 +1279,19 @@
                 colorLight: "#ffffff",
                 correctLevel: QRCode.CorrectLevel.H
             });
-
-            // Conectar ao WebSocket para receber os controles
-            connectWebSocket();
         }
 
         // Verificar se ambos os controles estão conectados
         function checkBothConnected() {
             if (leftControlConnected && rightControlConnected && controlMode === 'waiting') {
                 controlMode = 'shared';
+                console.log("Ambos os controles conectados! Iniciando jogo...");
                 // Iniciar o jogo automaticamente após um breve atraso
                 setTimeout(() => {
                     qrCodeScreen.style.display = 'none';
                     startScreen.style.display = 'flex';
+                    // Iniciar o jogo imediatamente se quiser pular a tela de "Iniciar Jogo"
+                    // startGame();
                 }, 1500);
             }
         }
@@ -1278,10 +1302,15 @@
             qrCodeScreen.style.display = 'none';
             startScreen.style.display = 'flex';
             // Se pular para solo, garanta que os indicadores de controle estejam 'desconectados'
-            leftControlIndicator.textContent = "⬅️ Desconectado (Solo)";
-            leftControlIndicator.classList.remove('active');
-            rightControlIndicator.textContent = "➡️ Desconectado (Solo)";
-            rightControlIndicator.classList.remove('active');
+            leftControlIndicator.textContent = "⬅️ Jogador 1 (Teclado)";
+            leftControlIndicator.classList.add('active'); // Opcional: mostrar que está ativo para teclado
+            rightControlIndicator.textContent = "➡️ Jogador 2 (Teclado)";
+            rightControlIndicator.classList.add('active'); // Opcional: mostrar que está ativo para teclado
+
+            // Desabilitar a conexão Socket.IO se já estiver ativa, pois não será usada em modo solo
+            if (socket && socket.connected) {
+                socket.disconnect();
+            }
         }
 
         // Modificar a função de controle do carro para suportar controles compartilhados
@@ -1311,31 +1340,23 @@
             car.style.left = carPosition + 'px';
         }
 
-        // Remove os ouvintes de teclado para 'a' e 'd' se o modo for 'shared' no início do gameLoop,
-        // mas mantém 'ArrowLeft' e 'ArrowRight' para o modo 'solo'.
-        // Ou, pode-se simplesmente deixar o `moveCar` lidar com isso, o que já está acontecendo.
-        // As seguintes linhas de keydown/keyup para 'a' e 'd' podem ser removidas se não forem para teste.
-        // Se você quiser que o teclado ainda funcione para a e d no modo solo, mantenha-os.
-        // Como o `controlMode` já está sendo verificado em `moveCar`, estas não são estritamente necessárias para "simular",
-        // elas apenas fazem o 'a' e 'd' funcionarem como os controles remotos no modo solo.
-     
+        // Remova os ouvintes de teclado para 'a' e 'd' que estavam simulando os controles remotos.
+        // Mantenha apenas 'ArrowLeft' e 'ArrowRight' para o modo solo.
+        // O código anterior para 'a' e 'd' foi removido para evitar confusão ou conflito.
+        /*
         window.addEventListener('keydown', function(e) {
             keysPressed[e.key] = true;
-            if (e.key === 'a' && controlMode === 'solo') leftControlActive = true;
-            if (e.key === 'd' && controlMode === 'solo') rightControlActive = true;
         });
 
         window.addEventListener('keyup', function(e) {
             keysPressed[e.key] = false;
-            if (e.key === 'a') leftControlActive = false;
-            if (e.key === 'd') rightControlActive = false;
         });
-        
+        */
 
-        // Iniciar geração de QR codes quando a página carregar
+        // Iniciar geração de QR codes e conexão WebSocket quando a página carregar
         window.addEventListener('load', function() {
             generateQRCodes();
-            connectWebSocket(); // Chame connectWebSocket diretamente
+            connectWebSocket(); // Chama a função para iniciar a conexão WebSocket
         });
     </script>
 </body>
