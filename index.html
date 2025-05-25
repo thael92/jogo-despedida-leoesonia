@@ -67,7 +67,7 @@
         #game-container {
             position: relative;
             width: 800px;
-            height: 600px;
+            height: 1000px;
             margin: 20px auto;
             border: 4px solid #333;
             border-radius: 10px;
@@ -78,7 +78,7 @@
         #road {
             position: absolute;
             width: 300px;
-            height: 600px;
+            height: 1000px;
             background-color: #444;
             left: 50%;
             transform: translateX(-50%);
@@ -88,7 +88,7 @@
         #road-lines {
             position: absolute;
             width: 20px;
-            height: 600px;
+            height: 1000px;
             left: 50%;
             transform: translateX(-50%);
         }
@@ -284,6 +284,110 @@
             z-index: 20;
             cursor: pointer;
         }
+
+         /* Contêiner do jogo responsivo */
+    #game-container {
+        width: 100%;
+        height: 100%;
+        max-width: 1200px;
+        max-height: 900px;
+        aspect-ratio: 4 / 3;
+        margin: auto;
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* Media Queries para responsividade */
+    @media screen and (max-width: 1200px) {
+        #game-container {
+            max-width: 100%;
+            max-height: 90vh;
+        }
+    }
+
+    @media screen and (max-width: 768px) {
+        #game-container {
+            max-width: 100%;
+            max-height: 80vh;
+        }
+
+        /* Ajustes para elementos menores em telas pequenas */
+        #car {
+            width: calc(50 / 800 * 100%);
+            height: calc(110 / 600 * 100%);
+        }
+
+        .obstacle {
+            width: calc(50 / 800 * 100%);
+            height: calc(50 / 600 * 100%);
+        }
+
+        #score, #level {
+            font-size: 16px;
+            padding: 5px;
+        }
+
+        h1 {
+            font-size: 24px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+    }
+
+    @media screen and (max-width: 480px) {
+        #game-container {
+            max-height: 70vh;
+        }
+
+        #car {
+            width: calc(45 / 800 * 100%);
+            height: calc(100 / 600 * 100%);
+        }
+
+        .obstacle {
+            width: calc(45 / 800 * 100%);
+            height: calc(45 / 600 * 100%);
+        }
+
+        #score, #level {
+            font-size: 14px;
+            padding: 3px;
+        }
+
+        h1 {
+            font-size: 20px;
+        }
+
+        button {
+            padding: 8px 15px;
+            font-size: 14px;
+        }
+    }
+
+    /* Ajustes para dispositivos touch */
+    @media (hover: none) and (pointer: coarse) {
+        #car {
+            /* Ajustes específicos para dispositivos touch */
+            touch-action: none;
+        }
+
+        button {
+            /* Botões maiores para telas touch */
+            min-height: 44px;
+            min-width: 44px;
+        }
+    }
+
+    /* Orientação paisagem em dispositivos móveis */
+    @media screen and (max-height: 500px) and (orientation: landscape) {
+        #game-container {
+            max-height: 100vh;
+            max-width: 100vw;
+        }
+    }
     </style>
 </head>
 <body>
@@ -361,7 +465,7 @@
 
         <div id="game-complete">
             <h1>Parabéns!</h1>
-            <p>Você completou todas as fases da viagem de despedida!</p>
+            <p>‘Nós nos esforçamos muito para vê-los pessoalmente.’ — 1 Tessalonicenses 2:17.</p>
             <div class="video-container">
                 <video id="final-video" width="100%" height="100%" controls preload="auto">
                     <source src="" type="video/mp4">
@@ -425,7 +529,7 @@
         let catJoined = false;   // Se a gata já se juntou ao carro
         let catEventTriggered = false; // Se o evento da gata já foi acionado
 
-        // Sons do jogo
+        // Sons do jogo (remova a música especial se ela não for mais usada)
         const sounds = {
             background: new Audio('music/son-carro.mp3'),
             collision: new Audio('music/collision.mp3'),
@@ -438,9 +542,12 @@
             ],
             catMeow: new Audio('music/cat-mia.mp3'),
             callCat: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-girl-calling-a-cat-with-a-sweet-voice-411.mp3')
+            // >>> REMOVA leoSoniaSong SE NÃO FOR MAIS USADA <<<
+            // leoSoniaSong: new Audio('music/sua-musica-especial.mp3')
+            // >>> FIM DA REMOÇÃO <<<
         };
 
-        // Configurar sons
+        // Configurar sons (mantenha as configurações existentes)
         sounds.background.loop = true;
         sounds.background.volume = 0.3;
         sounds.catMeow.volume = 0.7;
@@ -496,9 +603,13 @@
             level1: 'videos/fase1.mp4', // Exemplo: videos/level1.mp4
             level2: 'videos/fase2.mp4',
             level3: 'videos/fase3.mp4',
-            cat: 'videos/cat_join.mp4', // Exemplo: videos/cat_join.mp4
-            final: 'videos/final_message.mp4' // Exemplo: videos/final_message.mp4
+            cat: 'videos/video-mia.mp4', // Exemplo: videos/cat_join.mp4
+            // >>> ADICIONE A URL DO VÍDEO ESPECIAL AQUI <<<
+            special: 'videos/musica-especial.mp4', // <-- SUBSTITUA 'videos/video-especial-leo-sonia.mp4' pelo caminho real do seu arquivo de vídeo especial
+            // >>> FIM DA ADIÇÃO <<<
+            final: 'videos/fase3.mp4' // Este será o vídeo que toca DEPOIS do especial
         };
+        
 
         // Textos de alegria para os balões
         const joyTexts = [
@@ -542,7 +653,7 @@
                 lines[i].y += speed;
                 lines[i].element.style.top = lines[i].y + 'px';
 
-                if (lines[i].y > 600) {
+                if (lines[i].y > 1000) {
                     lines[i].y = -50;
                     lines[i].element.style.top = lines[i].y + 'px';
                 }
@@ -791,7 +902,7 @@
                 obstacles[i].element.style.top = obstacles[i].y + 'px';
 
                 // Remover obstáculo quando sair da tela
-                if (obstacles[i].y > 600) {
+                if (obstacles[i].y > 1000) {
                     obstacles[i].element.remove();
                     obstacles.splice(i, 1);
                     i--;
@@ -1073,6 +1184,18 @@
             startGame();
         }
 
+        // Função para lidar com tela cheia (já adicionada na resposta anterior)
+        function playVideoFullscreen(videoElement) {
+            if (videoElement.requestFullscreen) {
+                videoElement.requestFullscreen();
+            } else if (videoElement.webkitRequestFullscreen) {
+                videoElement.webkitRequestFullscreen();
+            } else if (videoElement.msRequestFullscreen) {
+                videoElement.msRequestFullscreen();
+            }
+            // Pode adicionar outros prefixos se necessário (ex: mozRequestFullScreen para Firefox)
+        }
+
         // Completar nível
         function completeLevel() {
             gameRunning = false;
@@ -1081,39 +1204,80 @@
             clearInterval(joyBubbleInterval);
             clearInterval(roadsideImageInterval);
 
-            // Parar música de fundo e tocar som de conclusão
+            // Parar música de fundo
             sounds.background.pause();
-            playSound(sounds.levelComplete);
 
             if (level < 3) {
+                // --- Código para Níveis 1 e 2 (Conclusão de Fase) ---
                 levelCompleteScreen.style.display = 'flex';
+                playSound(sounds.levelComplete); // Toca som de conclusão de nível
                 createConfetti();
 
-                // Configurar e reproduzir vídeo da fase
                 levelVideo.src = videoUrls[`level${level}`];
                 levelVideo.load();
                 levelVideo.play();
-                nextLevelButton.style.display = 'none'; // Esconder botão
+
+                levelVideo.onplay = () => {
+                    playVideoFullscreen(levelVideo);
+                };
 
                 levelVideo.onended = () => {
-                    nextLevelButton.style.display = 'block'; // Mostrar botão após o vídeo
+                    nextLevelButton.style.display = 'block';
+                    if (document.fullscreenElement) {
+                        document.exitFullscreen();
+                    }
                 };
 
-            } else {
-                gameCompleteScreen.style.display = 'flex';
-                playSound(sounds.gameComplete);
-                createConfetti();
-
-                // Configurar e reproduzir vídeo final
-                finalVideo.src = videoUrls.final;
-                finalVideo.load();
-                finalVideo.play();
-                playAgainButton.style.display = 'none'; // Esconder botão
-
-                finalVideo.onended = () => {
-                    playAgainButton.style.display = 'block'; // Mostrar botão após o vídeo
-                };
             }
+            // --- Código para Jogo Completo (Nível 3 concluído) ---
+            else {
+                gameCompleteScreen.style.display = 'flex';
+                createConfetti(); // Confetes começam a cair
+
+                // >>> INÍCIO DA LÓGICA DO VÍDEO ESPECIAL <<<
+
+                // Configurar e reproduzir o VÍDEO ESPECIAL primeiro usando o elemento finalVideo
+                finalVideo.src = videoUrls.special; // Define a fonte para o vídeo especial
+                finalVideo.load(); // Carrega o vídeo especial
+                finalVideo.play(); // Inicia a reprodução do vídeo especial
+
+                // Garante tela cheia para o vídeo especial quando ele começar a tocar
+                finalVideo.onplay = () => {
+                    playVideoFullscreen(finalVideo);
+                };
+
+                // Configura o que acontece QUANDO O VÍDEO ESPECIAL TERMINA
+                finalVideo.onended = () => {
+                    // Opcional: Sair da tela cheia após o vídeo especial (se quiser uma pausa visual)
+                    if (document.fullscreenElement) {
+                        document.exitFullscreen();
+                     }
+
+                    // Tocar som de conclusão do jogo (como transição entre os vídeos)
+                    playSound(sounds.gameComplete);
+
+                    // Agora, configurar e reproduzir o VÍDEO FINAL
+                    finalVideo.src = videoUrls.final; // Muda a fonte para o vídeo final
+                    finalVideo.load(); // Carrega o vídeo final
+                    finalVideo.play(); // Inicia a reprodução do vídeo final
+                    playAgainButton.style.display = 'none'; // Esconder botão
+
+                    finalVideo.onplay = () => {
+                        playVideoFullscreen(finalVideo);
+                    };
+
+                    finalVideo.onended = () => {
+                        playAgainButton.style.display = 'block';
+                        if (document.fullscreenElement) {
+                            document.exitFullscreen();
+                        }
+                    };
+
+                };
+
+                // >>> FIM DA LÓGICA DO VÍDEO ESPECIAL <<<
+            }
+            // --- Fim do bloco 'else' ---
         }
 
         // Próximo nível
