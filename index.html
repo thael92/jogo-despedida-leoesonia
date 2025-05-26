@@ -294,6 +294,15 @@
         position: relative;
         overflow: hidden;
     }
+    .roadside-image {
+    position: absolute;
+    width: calc(250 / 800 * 100%); /* Aumentei de 100px para 150px */
+    height: calc(350 / 600 * 100%); /* Aumentei de 100px para 150px */
+    z-index: 3;
+    background-size: cover;
+    background-position: center;
+}
+
 
     /* Media Queries para responsividade */
     @media screen and (max-width: 1200px) {
@@ -623,11 +632,10 @@
 
         // Imagens para as margens da estrada
         const roadsideImageUrls = [
-            'img/IMG-20250519-WA0075.jpg',
-            'https://photos.google.com/photo/AF1QipOWO0Qvsnre_Cdx7JTt6SDaeIn-96rjWAkm4cdj',
-            'https://photos.google.com/photo/AF1QipNTqwxKcIHLggGjXW2Ii5iI_x5UM2UavkwhBKPo',
-            'https://photos.google.com/photo/AF1QipOJk77TvZCo3dCyJxSQ0QtSHnoa0pp3G1ZDxId5',
-            'https://photos.google.com/photo/AF1QipPmBNoiTiYe1O42lacEmGNhSI6ntJU2CbbBc-qS'
+            'img/placas-cidades.png',
+            'img/placas-saudades.png',
+            'img/placas-cidades.png',
+            'img/placas-saudades.png',
         ];
 
         // Criar linhas da estrada
@@ -1162,25 +1170,71 @@
         }
 
         // Reiniciar jogo
-        function restartGame() {
-            gameOverScreen.style.display = 'none';
-            gameCompleteScreen.style.display = 'none';
+    function restartGame() {
+        gameOverScreen.style.display = 'none';
+        gameCompleteScreen.style.display = 'none';
 
-            // Pausar e redefinir vídeos
-            levelVideo.pause();
-            levelVideo.currentTime = 0;
-            catVideo.pause();
-            catVideo.currentTime = 0;
-            finalVideo.pause();
-            finalVideo.currentTime = 0;
+        // Pausar e redefinir vídeos
+        levelVideo.pause();
+        levelVideo.currentTime = 0;
+        catVideo.pause();
+        catVideo.currentTime = 0;
+        finalVideo.pause();
+        finalVideo.currentTime = 0;
 
-            // Esconder botões novamente
-            nextLevelButton.style.display = 'none';
-            continueWithCatButton.style.display = 'none';
-            playAgainButton.style.display = 'none';
+        // Esconder botões novamente
+        nextLevelButton.style.display = 'none';
+        continueWithCatButton.style.display = 'none';
+        playAgainButton.style.display = 'none';
 
-            startGame();
+        // Reiniciar o jogo na fase atual
+        restartLevel();
+    }
+
+    // Função para reiniciar o nível atual
+    function restartLevel() {
+        gameRunning = true;
+        score = 0;
+        speed = levelSettings[level].speed;
+        obstaclePattern = 0;
+        catJoined = false;
+        catEventTriggered = false;
+        scoreElement.textContent = 'Pontos: ' + score;
+
+        // Esconder a gata e seu diálogo
+        cat.style.display = 'none';
+        catDialog.style.display = 'none';
+
+        // Posicionar carro
+        const gameContainer = document.getElementById('game-container');
+        const roadRect = road.getBoundingClientRect();
+        const gameContainerRect = gameContainer.getBoundingClientRect();
+        carPosition = (roadRect.left - gameContainerRect.left) + (roadRect.width / 2) - 40;
+        car.style.left = carPosition + 'px';
+
+        // Limpar obstáculos anteriores
+        obstacles.forEach(obstacle => obstacle.element.remove());
+        obstacles = [];
+
+        // Limpar imagens nas margens
+        roadsideImages.forEach(image => image.element.remove());
+        roadsideImages = [];
+
+        // Criar linhas
+        createRoadLines();
+
+        // Iniciar música de fundo
+        if (soundEnabled) {
+            sounds.background.currentTime = 0;
+            sounds.background.play();
         }
+
+        // Iniciar loops
+        gameLoop();
+        obstacleInterval = setInterval(createObstacle, levelSettings[level].obstacleFrequency);
+        joyBubbleInterval = setInterval(createJoyBubble, 3000);
+        roadsideImageInterval = setInterval(createRoadsideImage, 4000);
+    }
 
         // Função para lidar com tela cheia (já adicionada na resposta anterior)
         function playVideoFullscreen(videoElement) {
